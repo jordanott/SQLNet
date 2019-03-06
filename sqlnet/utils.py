@@ -62,14 +62,14 @@ def load_dataset(dataset_id, use_small=False):
             test_sql_data, test_table_data, TRAIN_DB, DEV_DB, TEST_DB
 
 def best_model_name(args, for_load=False):
-    new_data = 'new' if args.dataset > 0 else 'old'
-    mode = 'seq2sql' if args.baseline else 'sqlnet'
+    new_data = 'new' if args['dataset'] > 0 else 'old'
+    mode = 'seq2sql' if args['baseline'] else 'sqlnet'
     if for_load:
         use_emb = use_rl = ''
     else:
-        use_emb = '_train_emb' if args.train_emb else ''
-        use_rl = 'rl_' if args.rl else ''
-    use_ca = '_ca' if args.ca else ''
+        use_emb = '_train_emb' if args['train_emb'] else ''
+        use_rl = 'rl_' if args['rl'] else ''
+    use_ca = '_ca' if args['ca'] else ''
 
     agg_model_name = 'saved_model/%s_%s%s%s.agg_model'%(new_data,
             mode, use_emb, use_ca)
@@ -78,7 +78,7 @@ def best_model_name(args, for_load=False):
     cond_model_name = 'saved_model/%s_%s%s%s.cond_%smodel'%(new_data,
             mode, use_emb, use_ca, use_rl)
 
-    if not for_load and args.train_emb:
+    if not for_load and args['train_emb']:
         agg_embed_name = 'saved_model/%s_%s%s%s.agg_embed'%(new_data,
                 mode, use_emb, use_ca)
         sel_embed_name = 'saved_model/%s_%s%s%s.sel_embed'%(new_data,
@@ -106,7 +106,7 @@ def to_batch_seq(sql_data, table_data, idxes, st, ed, ret_vis_data=False):
         col_seq.append(table_data[sql['table_id']]['header_tok'])
         col_num.append(len(table_data[sql['table_id']]['header']))
         ans_seq.append((sql['sql']['agg'],
-            sql['sql']['sel'], 
+            sql['sql']['sel'],
             len(sql['sql']['conds']),
             tuple(x[0] for x in sql['sql']['conds']),
             tuple(x[1] for x in sql['sql']['conds'])))
@@ -142,7 +142,7 @@ def epoch_train(model, optimizer, batch_size, sql_data, table_data, pred_entry):
         score = model.forward(q_seq, col_seq, col_num, pred_entry,
                 gt_where=gt_where_seq, gt_cond=gt_cond_seq, gt_sel=gt_sel_seq)
         loss = model.loss(score, ans_seq, pred_entry, gt_where_seq)
-        cum_loss += loss.data.cpu().numpy()[0]*(ed - st)
+        cum_loss += loss.data.cpu().numpy()*(ed - st)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -183,7 +183,7 @@ def epoch_exec_acc(model, batch_size, sql_data, table_data, db_path):
             except:
                 ret_pred = None
             tot_acc_num += (ret_gt == ret_pred)
-        
+
         st = ed
 
     return tot_acc_num / len(sql_data)
